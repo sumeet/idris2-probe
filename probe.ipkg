@@ -1,0 +1,8 @@
+package probe
+
+modules = Main
+
+main = Main
+executable = probe
+
+opts = "-p contrib -p sdl"
