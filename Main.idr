@@ -66,7 +66,7 @@ myGameLoop s grid = do
     Success s <- setColor black s
         | Failure s err => do putError err
                               pure1 s
-    s <- drawPoints s $ filter (\(_, onOrOff) => onOrOff) $ toList $ flatGrid grid
+    s <- drawPoints s $ toList $ snd $ Data.Vect.filter (\(_, onOrOff) => onOrOff) $ flatGrid grid
     s <- render s
 
     delaySDL delay
