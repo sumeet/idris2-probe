@@ -6,13 +6,6 @@ import Data.Vect
 import Data.List
 import System.Random
 
-export
-Grid : Nat -> Nat -> Type
-Grid w h = Vect w (Vect h Bool)
-
-get : Grid w h -> Fin w -> Fin h -> Bool
-get grid x y = y `index` (x `index` grid)
-
 Point : {w: Nat} -> {h: Nat} -> Type
 Point = (Fin w, Fin h)
 
@@ -23,25 +16,61 @@ add (x,y) (dx,dy) = do
     y' <- integerToFin ((finToInteger y) + dy) h
     Just (x', y')
 
-export
-initGrid : {w: Nat} -> {h: Nat} -> IO (Grid w h)
-initGrid = do
-   sequence $ Data.Vect.replicate w $
-    sequence $ Data.Vect.replicate h (rndSelect [True, False])
 
 countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
 countFin f [] = FZ
 countFin f (x :: xs) = let rest = countFin f xs in
     if f x then shift 1 $ rest else weaken rest
 
+NumNeighbors : Type
+NumNeighbors = Fin 9
+
+export
+zipWithIndex : {n: Nat} -> Vect n a -> Vect n (Fin n, a)
+zipWithIndex v = zip Data.Vect.Fin.range v
+
+export
+Grid : Nat -> Nat -> Type
+Grid w h = Vect w (Vect h Bool)
+
+get : Grid w h -> Fin w -> Fin h -> Bool
+get grid x y = y `index` (x `index` grid)
+
+export
+testGrid : Grid 2 2
+testGrid = [[True, True], [False, True]]
+
+-- Any live cell with two or three live neighbours survives.
+-- Any dead cell with three live neighbours becomes a live cell.
+-- All other live cells die in the next generation. Similarly, all other dead cells stay dead.
+applyConwayRules : Bool -> NumNeighbors -> Bool
+applyConwayRules True 2 = True
+applyConwayRules True 3 = True
+applyConwayRules False 3 = True
+applyConwayRules _ _ = False
+
 numOnNeighbors : {w: Nat} -> {h: Nat} -> Grid w h -> Point {w = w, h = h}
-                 -> Fin 9
-numOnNeighbors grid xy = 
-    let neighbors = map (add xy) dxdys in
-        countFin (\case Nothing => False
-                        Just (x,y) => get grid x y) neighbors
+                 -> NumNeighbors
+numOnNeighbors grid xy = let neighbors = map (add xy) dxdys in
+    countFin (\case Nothing => False
+                    Just (x,y) => get grid x y) neighbors
     where
         dxdys : Vect 8 (Integer, Integer)
         dxdys = [(-1, -1), (-1, 0), (-1, 1),
-                (0, -1), (0, 1),
-                (1, -1), (1, 0), (1, 1)]
+                 (0, -1), (0, 1),
+                 (1, -1), (1, 0), (1, 1)]
+
+export
+nextGrid : {w: Nat} -> {h: Nat} -> Grid w h -> Grid w h
+nextGrid grid =
+    let cols = map (zipWithIndex {n = h}) grid 
+        cells = zipWithIndex {n = w} cols in
+    map (\(x, cols) => map (\(y, cell) => applyConwayRules cell $ numOnNeighbors grid (x,y)) cols)
+        cells
+
+
+export
+initGrid : {w: Nat} -> {h: Nat} -> IO (Grid w h)
+initGrid = do
+   sequence $ Data.Vect.replicate w $
+    sequence $ Data.Vect.replicate h (rndSelect [True, False])
