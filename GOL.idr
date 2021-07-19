@@ -6,8 +6,17 @@ import Data.Vect
 import Data.List
 import System.Random
 
+export
 Point : {w: Nat} -> {h: Nat} -> Type
 Point = (Fin w, Fin h)
+
+export
+getx : {w: Nat} -> Point {w=w, h=_} -> Fin w
+getx = fst 
+
+export
+gety : {h: Nat} -> Point {w=_, h=h} -> Fin h
+gety = snd
 
 add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} -> (Integer, Integer)
       -> Maybe (Point {w = w, h = h})
@@ -36,10 +45,6 @@ Grid w h = Vect w (Vect h Bool)
 get : Grid w h -> Fin w -> Fin h -> Bool
 get grid x y = y `index` (x `index` grid)
 
-export
-testGrid : Grid 2 2
-testGrid = [[True, True], [False, True]]
-
 -- Any live cell with two or three live neighbours survives.
 -- Any dead cell with three live neighbours becomes a live cell.
 -- All other live cells die in the next generation. Similarly, all other dead cells stay dead.
@@ -65,12 +70,28 @@ nextGrid : {w: Nat} -> {h: Nat} -> Grid w h -> Grid w h
 nextGrid grid =
     let cols = map (zipWithIndex {n = h}) grid 
         cells = zipWithIndex {n = w} cols in
-    map (\(x, cols) => map (\(y, cell) => applyConwayRules cell $ numOnNeighbors grid (x,y)) cols)
+    map (\(x, cols) =>
+            map (\(y, cell) =>
+                    applyConwayRules cell $ numOnNeighbors grid (x,y))
+                cols)
         cells
+
+
+export
+flatGrid : {w: Nat} -> {h: Nat} -> Grid w h ->
+           Vect (w * h) (Point {w=w, h=h}, Bool)
+flatGrid grid =
+    let cols = map (zipWithIndex {n = h}) grid 
+        cells = zipWithIndex {n = w} cols
+        gridWithIndex =
+            map (\(x, cols) =>
+                    map (\(y, cell) => ((x,y), cell)) cols)
+                cells in
+    concat gridWithIndex
 
 
 export
 initGrid : {w: Nat} -> {h: Nat} -> IO (Grid w h)
 initGrid = do
-   sequence $ Data.Vect.replicate w $
-    sequence $ Data.Vect.replicate h (rndSelect [True, False])
+    sequence $ Data.Vect.replicate w $
+        sequence $ Data.Vect.replicate h (rndSelect [True, False])
