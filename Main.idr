@@ -8,12 +8,14 @@ import Data.Nat
 import Data.Vect
 import Data.List
 
+import GOL
+
 putError : LinearIO io => (err : SDLError) -> L io ()
 putError = putStrLn . show
 
 windowOpts : SDLWindowOptions
 windowOpts =
-  MkSDLWindowOptions { name = "Example"
+  MkSDLWindowOptions { name = "GoL"
                      , x = SDLWindowPosCentered
                      , y = SDLWindowPosCentered
                      , width = 500
@@ -53,26 +55,16 @@ myGameLoop s = do
 
 sdlLoop : (LinearIO io) => L io ()
 sdlLoop = initSDL [SDLInitVideo] (\err => putStrLn "Fatal error: \{show err}") $ \s => do
-  putStrLn "=> SDL Inited"
-
-  --let winops : SDLWindowOptions = record { width = size, height = size } defaultWindowOpts
   Success s <- newWindow windowOpts s
     | Failure s err => handleInitedError s (putError err)
-  putStrLn "=> Window created"
 
   Success s <- newRenderer Nothing [SDLRendererSoftware] s
     | Failure s err => handleWindowedError s (putError err)
-  putStrLn "=> Renderer operational"
 
   s <- myGameLoop s
-
   s <- closeRenderer s
-  putStrLn "=> Renderer closed"
   s <- closeWindow s
-  putStrLn "=> Window closed"
   quitSDL s
-  putStrLn "=> SDL quitted"
-
 
 main : IO ()
 main = do
