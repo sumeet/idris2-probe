@@ -12,17 +12,25 @@ Point = (Fin w, Fin h)
 
 export
 getx : {w: Nat} -> Point {w=w, h=_} -> Fin w
-getx = fst 
+getx = fst
 
 export
 gety : {h: Nat} -> Point {w=_, h=h} -> Fin h
 gety = snd
 
-add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} -> (Integer, Integer)
+data CoordDiff = Decr | None | Incr
+
+applyDiff : {n: Nat} -> Fin n -> CoordDiff -> Maybe (Fin n)
+applyDiff x None = Just x
+applyDiff FZ Decr = Nothing
+applyDiff (FS k) Decr = Just $ weaken k
+applyDiff k Incr = strengthen $ shift 1 k
+
+add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} -> (CoordDiff, CoordDiff)
       -> Maybe (Point {w = w, h = h})
 add (x,y) (dx,dy) = do
-    x' <- integerToFin ((finToInteger x) + dx) w
-    y' <- integerToFin ((finToInteger y) + dy) h
+    x' <- applyDiff x dx
+    y' <- applyDiff y dy
     Just (x', y')
 
 
@@ -60,15 +68,15 @@ numOnNeighbors grid xy = let neighbors = map (add xy) dxdys in
     countFin (\case Nothing => False
                     Just (x,y) => get grid x y) neighbors
     where
-        dxdys : Vect 8 (Integer, Integer)
-        dxdys = [(-1, -1), (-1, 0), (-1, 1),
-                 (0, -1), (0, 1),
-                 (1, -1), (1, 0), (1, 1)]
+        dxdys : Vect 8 (CoordDiff, CoordDiff)
+        dxdys = [(Decr, Decr), (Decr, None), (Decr, Incr),
+                 (None, Decr), (None, Incr),
+                 (Incr, Decr), (Incr, None), (Incr, Incr)]
 
 export
 nextGrid : {w: Nat} -> {h: Nat} -> Grid w h -> Grid w h
 nextGrid grid =
-    let cols = map (zipWithIndex {n = h}) grid 
+    let cols = map (zipWithIndex {n = h}) grid
         cells = zipWithIndex {n = w} cols in
     map (\(x, cols) =>
             map (\(y, cell) =>
@@ -81,7 +89,7 @@ export
 flatGrid : {w: Nat} -> {h: Nat} -> Grid w h ->
            Vect (w * h) (Point {w=w, h=h}, Bool)
 flatGrid grid =
-    let cols = map (zipWithIndex {n = h}) grid 
+    let cols = map (zipWithIndex {n = h}) grid
         cells = zipWithIndex {n = w} cols
         gridWithIndex =
             map (\(x, cols) =>

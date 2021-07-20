@@ -51,7 +51,7 @@ drawPoints s ((point, onOrOff) :: xs) =
     | Failure s err => do putError err
                           pure1 s
   drawPoints s xs
-  
+
 
 myGameLoop : LinearIO io => {w: Nat} -> {h: Nat} -> (1 _ : SDL WithRenderer) -> Grid w h -> L {use = 1} io (SDL WithRenderer)
 myGameLoop s grid = do
@@ -70,7 +70,8 @@ myGameLoop s grid = do
     s <- render s
 
     delaySDL delay
-    myGameLoop s $ nextGrid grid
+    pure1 s
+    --myGameLoop s $ nextGrid grid
 
 
 sdlLoop : (LinearIO io) => L io ()
@@ -83,7 +84,7 @@ sdlLoop = initSDL [SDLInitVideo] (\err => putStrLn "Fatal error: \{show err}") $
 
   grid <- liftIO $ initGrid {w=width, h=height}
 
-  s <- myGameLoop s grid
+  s <- myGameLoop s $ nextGrid $ grid
   s <- closeRenderer s
   s <- closeWindow s
   quitSDL s
