@@ -26,13 +26,9 @@ applyDiff FZ Decr = Nothing
 applyDiff (FS k) Decr = Just $ weaken k
 applyDiff k Incr = strengthen $ shift 1 k
 
-add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} -> (CoordDiff, CoordDiff)
-      -> Maybe (Point {w = w, h = h})
-add (x,y) (dx,dy) = do
-    x' <- applyDiff x dx
-    y' <- applyDiff y dy
-    Just (x', y')
-
+add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} ->
+      (CoordDiff, CoordDiff) -> Maybe (Point {w = w, h = h})
+add (x,y) (dx,dy) = Just (!(applyDiff x dx), !(applyDiff y dy))
 
 countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
 countFin f [] = FZ
