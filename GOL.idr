@@ -39,8 +39,8 @@ NumNeighbors : Type
 NumNeighbors = Bits8
 
 export
-zipWithIndex : {n: Nat} -> Vect n a -> Vect n (Fin n, a)
-zipWithIndex v = zip Data.Vect.Fin.range v
+zipWithIndex : {n: Nat} -> Vect n a -> List (Integer, a)
+zipWithIndex v = zip (take n [0..]) $ toList v
 
 export
 Grid : Nat -> Nat -> Type
@@ -69,21 +69,31 @@ numOnNeighbors grid xy = let neighbors = map (add xy) dxdys in
                  (None, Decr), (None, Incr),
                  (Incr, Decr), (Incr, None), (Incr, Incr)]
 
+conwayRules : Bool -> Nat -> Bool
+conwayRules b n = n == 3 || n == 4 && b
+
 export
-nextGrid : {w: Nat} -> {h: Nat} -> Grid w h -> Grid w h
-nextGrid grid =
-    let cols = map (zipWithIndex {n = h}) grid
-        cells = zipWithIndex {n = w} cols in
-    map (\(x, cols) =>
-            map (\(y, cell) =>
-                    applyConwayRules cell $ numOnNeighbors grid (x,y))
-                cols)
-        cells
+nextGrid : Grid w h -> Grid w h
+nextGrid grid = zipWith (zipWith conwayRules) grid numNeighbors
+  where boolToNat : Bool -> Nat
+        boolToNat True = 1
+        boolToNat False = 0
+        go : (a -> b) -> (b -> b -> b) -> (b -> b -> b -> b) -> b -> b -> Vect n a -> Vect (S n) b
+        go c p p2 a b [] = [p a b]
+        go c p p2 a b (x::xs) = let x' = c x in p2 a b x' :: go c p p2 b x' xs
+        f : (a -> b) -> (b -> b -> b) -> (b -> b -> b -> b) -> Vect n a -> Vect n b
+        f c _ _ [] = []
+        f c _ _ [x] = [c x]
+        f c p p2 (x::y::xs) = let x' = c x ; y' = c y in p x' y' :: go c p p2 x' y' xs
+        add3 : Nat -> Nat -> Nat -> Nat
+        add3 a b c = a + b + c
+        numNeighbors : ?
+        numNeighbors = f (f boolToNat (+) add3) (zipWith (+)) (zipWith3 add3) grid
 
 
 export
 flatGrid : {w: Nat} -> {h: Nat} -> Grid w h ->
-           Vect (w * h) (Point {w=w, h=h}, Bool)
+           List ((Integer, Integer), Bool)
 flatGrid grid =
     let cols = map (zipWithIndex {n = h}) grid
         cells = zipWithIndex {n = w} cols
