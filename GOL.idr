@@ -43,8 +43,8 @@ NumNeighbors : Type
 NumNeighbors = Fin 9
 
 export
-zipWithIndex : {n: Nat} -> Vect n a -> Vect n (Fin n, a)
-zipWithIndex v = zip Data.Vect.Fin.range v
+zipWithIndex : {n: Nat} -> Vect n a -> List (Integer, a)
+zipWithIndex v = zip (take n [0..]) $ toList v
 
 export
 Grid : Nat -> Nat -> Type
@@ -53,41 +53,31 @@ Grid w h = Vect w (Vect h Bool)
 get : Grid w h -> Fin w -> Fin h -> Bool
 get grid x y = y `index` (x `index` grid)
 
--- Any live cell with two or three live neighbours survives.
--- Any dead cell with three live neighbours becomes a live cell.
--- All other live cells die in the next generation. Similarly, all other dead cells stay dead.
-applyConwayRules : Bool -> NumNeighbors -> Bool
-applyConwayRules True 2 = True
-applyConwayRules True 3 = True
-applyConwayRules False 3 = True
-applyConwayRules _ _ = False
-
-numOnNeighbors : {w: Nat} -> {h: Nat} -> Grid w h -> Point {w = w, h = h}
-                 -> NumNeighbors
-numOnNeighbors grid xy = let neighbors = map (add xy) dxdys in
-    countFin (\case Nothing => False
-                    Just (x,y) => get grid x y) neighbors
-    where
-        dxdys : Vect 8 (CoordDiff, CoordDiff)
-        dxdys = [(Decr, Decr), (Decr, None), (Decr, Incr),
-                 (None, Decr), (None, Incr),
-                 (Incr, Decr), (Incr, None), (Incr, Incr)]
+conwayRules : Bool -> Nat -> Bool
+conwayRules b n = n == 3 || n == 4 && b
 
 export
-nextGrid : {w: Nat} -> {h: Nat} -> Grid w h -> Grid w h
-nextGrid grid =
-    let cols = map (zipWithIndex {n = h}) grid
-        cells = zipWithIndex {n = w} cols in
-    map (\(x, cols) =>
-            map (\(y, cell) =>
-                    applyConwayRules cell $ numOnNeighbors grid (x,y))
-                cols)
-        cells
+nextGrid : Grid w h -> Grid w h
+nextGrid grid = zipWith (zipWith conwayRules) grid numNeighbors
+  where boolToNat : Bool -> Nat
+        boolToNat True = 1
+        boolToNat False = 0
+        go : (a -> b) -> (b -> b -> b) -> (b -> b -> b -> b) -> b -> b -> Vect n a -> Vect (S n) b
+        go c p p2 a b [] = [p a b]
+        go c p p2 a b (x::xs) = let x' = c x in p2 a b x' :: go c p p2 b x' xs
+        f : (a -> b) -> (b -> b -> b) -> (b -> b -> b -> b) -> Vect n a -> Vect n b
+        f c _ _ [] = []
+        f c _ _ [x] = [c x]
+        f c p p2 (x::y::xs) = let x' = c x ; y' = c y in p x' y' :: go c p p2 x' y' xs
+        add3 : Nat -> Nat -> Nat -> Nat
+        add3 a b c = a + b + c
+        numNeighbors : ?
+        numNeighbors = f (f boolToNat (+) add3) (zipWith (+)) (zipWith3 add3) grid
 
 
 export
 flatGrid : {w: Nat} -> {h: Nat} -> Grid w h ->
-           Vect (w * h) (Point {w=w, h=h}, Bool)
+           List ((Integer, Integer), Bool)
 flatGrid grid =
     let cols = map (zipWithIndex {n = h}) grid
         cells = zipWithIndex {n = w} cols
