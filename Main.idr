@@ -10,6 +10,10 @@ import Data.List
 
 import GOL
 
+%builtin Natural Nat
+%builtin Natural Fin
+%builtin NaturalToInteger finToInteger
+
 putError : LinearIO io => (err : SDLError) -> L io ()
 putError = putStrLn . show
 
@@ -40,8 +44,10 @@ white = RGBA 255 255 255 255
 delay : Nat
 delay = 50 -- in ms
 
-drawPoints : LinearIO io => {w: Nat} -> {h: Nat} -> (1 _ : SDL WithRenderer)
-             -> List (Point {w=w, h=h}, Bool) -> L {use = 1} io (SDL WithRenderer)
+drawPoints : LinearIO io => {w: Nat} -> {h: Nat} ->
+             (1 _ : SDL WithRenderer) ->
+             List (Point {w=w, h=h}, Bool) ->
+             L {use = 1} io (SDL WithRenderer)
 drawPoints s [] = pure1 s
 drawPoints s ((point, onOrOff) :: xs) =
   let x = finToInteger $ getx point
