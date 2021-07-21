@@ -57,22 +57,20 @@ drawPoints s (((x, y), onOrOff) :: xs) =
   drawPoints s xs
 
 myGameLoop : LinearIO io => {w: Nat} -> {h: Nat} ->
-             (1 _ : SDL WithRenderer) -> Grid w h -> L {use = 1} io (SDL WithRenderer)
+             (1 _ : SDL WithRenderer) -> Grid w h ->
+             L {use = 1} io (SDL WithRenderer)
 myGameLoop s grid = do
     Success s <- setColor white s
         | Failure s err => do putError err
                               pure1 s
-
     Success s <- clear s
         | Failure s err => do putError err
                               pure1 s
-
     Success s <- setColor black s
         | Failure s err => do putError err
                               pure1 s
     s <- drawPoints s $ filter (\(_, onOrOff) => onOrOff) $ flatGrid grid
     s <- render s
-
     delaySDL delay
     myGameLoop s (nextGrid grid)
 
