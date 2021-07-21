@@ -56,8 +56,8 @@ drawPoints s (((x, y), onOrOff) :: xs) =
                           pure1 s
   drawPoints s xs
 
-
-myGameLoop : LinearIO io => {w: Nat} -> {h: Nat} -> (1 _ : SDL WithRenderer) -> Grid w h -> L {use = 1} io (SDL WithRenderer)
+myGameLoop : LinearIO io => {w: Nat} -> {h: Nat} ->
+             (1 _ : SDL WithRenderer) -> Grid w h -> L {use = 1} io (SDL WithRenderer)
 myGameLoop s grid = do
     Success s <- setColor white s
         | Failure s err => do putError err
