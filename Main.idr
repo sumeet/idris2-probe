@@ -13,6 +13,7 @@ import GOL
 %builtin Natural Nat
 %builtin Natural Fin
 %builtin NaturalToInteger finToInteger
+%builtin NaturalToInteger natToInteger
 
 putError : LinearIO io => (err : SDLError) -> L io ()
 putError = putStrLn . show

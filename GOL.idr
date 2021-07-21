@@ -30,13 +30,13 @@ add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} ->
       (CoordDiff, CoordDiff) -> Maybe (Point {w = w, h = h})
 add (x,y) (dx,dy) = Just (!(applyDiff x dx), !(applyDiff y dy))
 
-countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
-countFin f [] = FZ
-countFin f (x :: xs) = let rest = countFin f xs in
-    if f x then shift 1 $ rest else weaken rest
+--countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
+--countFin f [] = FZ
+--countFin f (x :: xs) = let rest = countFin f xs in
+--    if f x then shift 1 $ rest else weaken rest
 
 NumNeighbors : Type
-NumNeighbors = Fin 9
+NumNeighbors = Bits8
 
 export
 zipWithIndex : {n: Nat} -> Vect n a -> Vect n (Fin n, a)
@@ -61,8 +61,8 @@ applyConwayRules _ _ = False
 numOnNeighbors : {w: Nat} -> {h: Nat} -> Grid w h -> Point {w = w, h = h}
                  -> NumNeighbors
 numOnNeighbors grid xy = let neighbors = map (add xy) dxdys in
-    countFin (\case Nothing => False
-                    Just (x,y) => get grid x y) neighbors
+    cast $ count (\case Nothing => False
+                        Just (x,y) => get grid x y) neighbors
     where
         dxdys : Vect 8 (CoordDiff, CoordDiff)
         dxdys = [(Decr, Decr), (Decr, None), (Decr, Incr),
