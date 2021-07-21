@@ -19,18 +19,21 @@ putError : LinearIO io => (err : SDLError) -> L io ()
 putError = putStrLn . show
 
 width : Nat
-width = 500
+width = 250
 
 height : Nat
-height = 500
+height = 250
+
+scale : Nat
+scale = 4
 
 windowOpts : SDLWindowOptions
 windowOpts =
   MkSDLWindowOptions { name = "GoL"
                      , x = SDLWindowPosCentered
                      , y = SDLWindowPosCentered
-                     , width = cast Main.width
-                     , height = cast Main.height
+                     , width = cast (Main.width * scale)
+                     , height = cast (Main.height * scale)
                      , flags = []
                      }
 
