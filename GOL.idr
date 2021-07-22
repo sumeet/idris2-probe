@@ -36,11 +36,11 @@ add (x,y) (dx,dy) = Just (!(applyDiff x dx), !(applyDiff y dy))
 --    if f x then shift 1 $ rest else weaken rest
 
 NumNeighbors : Type
-NumNeighbors = Bits8
+NumNeighbors = Nat
 
 export
-zipWithIndex : {n: Nat} -> Vect n a -> List (Integer, a)
-zipWithIndex v = zip (take n [0..]) $ toList v
+zipWithIndex : {n: Nat} -> Vect n a -> Vect n (Fin n, a)
+zipWithIndex v = zip Data.Vect.Fin.range v
 
 export
 Grid : Nat -> Nat -> Type
@@ -87,13 +87,13 @@ nextGrid grid = zipWith (zipWith conwayRules) grid numNeighbors
         f c p p2 (x::y::xs) = let x' = c x ; y' = c y in p x' y' :: go c p p2 x' y' xs
         add3 : Nat -> Nat -> Nat -> Nat
         add3 a b c = a + b + c
-        numNeighbors : ?
+        numNeighbors : Vect w (Vect h NumNeighbors)
         numNeighbors = f (f boolToNat (+) add3) (zipWith (+)) (zipWith3 add3) grid
 
 
 export
 flatGrid : {w: Nat} -> {h: Nat} -> Grid w h ->
-           List ((Integer, Integer), Bool)
+           Vect (w * h) (Point {w=w, h=h}, Bool)
 flatGrid grid =
     let cols = map (zipWithIndex {n = h}) grid
         cells = zipWithIndex {n = w} cols

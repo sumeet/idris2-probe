@@ -54,12 +54,14 @@ foreground = white
 delay : Nat
 delay = 50 -- in ms
 
-drawPoints : LinearIO io => (1 _ : SDL WithRenderer) ->
-             List ((Integer, Integer), Bool) ->
+drawPoints : {w: Nat} -> {h: Nat} -> LinearIO io =>
+             (1 _ : SDL WithRenderer) -> List (Point {w=w, h=h}, Bool) ->
              L {use = 1} io (SDL WithRenderer)
 drawPoints s [] = pure1 s
-drawPoints s (((x, y), onOrOff) :: xs) =
-  let rect = MkRect (cast x * cast scale) (cast y * cast scale) (cast scale) (cast scale) in do
+drawPoints s ((point, onOrOff) :: xs) =
+  let x = finToInteger $ getx point
+      y = finToInteger $ gety point
+      rect = MkRect (cast x * cast scale) (cast y * cast scale) (cast scale) (cast scale) in do
   Success s <- fillRect rect s
     | Failure s err => do putError err
                           pure1 s
@@ -78,7 +80,7 @@ myGameLoop s grid = do
     Success s <- setColor foreground s
         | Failure s err => do putError err
                               pure1 s
-    s <- drawPoints s $ filter (\(_, onOrOff) => onOrOff) $ flatGrid grid
+    s <- drawPoints s $ toList $ snd $ filter (\(_, onOrOff) => onOrOff) $ flatGrid grid
     s <- render s
     delaySDL delay
     pure1 s
