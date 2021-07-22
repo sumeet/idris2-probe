@@ -45,6 +45,12 @@ white : SDLColor
 white = RGBA 255 255 255 255
 %auto_implicit_depth 50
 
+background : SDLColor
+background = black
+
+foreground : SDLColor
+foreground = white
+
 delay : Nat
 delay = 50 -- in ms
 
@@ -53,7 +59,7 @@ drawPoints : LinearIO io => (1 _ : SDL WithRenderer) ->
              L {use = 1} io (SDL WithRenderer)
 drawPoints s [] = pure1 s
 drawPoints s (((x, y), onOrOff) :: xs) =
-  let rect = MkRect (cast x) (cast y) 1 1 in do
+  let rect = MkRect (cast x * cast scale) (cast y * cast scale) (cast scale) (cast scale) in do
   Success s <- fillRect rect s
     | Failure s err => do putError err
                           pure1 s
@@ -63,13 +69,13 @@ myGameLoop : LinearIO io => {w: Nat} -> {h: Nat} ->
              (1 _ : SDL WithRenderer) -> Grid w h ->
              L {use = 1} io (SDL WithRenderer)
 myGameLoop s grid = do
-    Success s <- setColor white s
+    Success s <- setColor background s
         | Failure s err => do putError err
                               pure1 s
     Success s <- clear s
         | Failure s err => do putError err
                               pure1 s
-    Success s <- setColor black s
+    Success s <- setColor foreground s
         | Failure s err => do putError err
                               pure1 s
     s <- drawPoints s $ filter (\(_, onOrOff) => onOrOff) $ flatGrid grid
