@@ -81,7 +81,8 @@ myGameLoop s grid = do
     s <- drawPoints s $ filter (\(_, onOrOff) => onOrOff) $ flatGrid grid
     s <- render s
     delaySDL delay
-    myGameLoop s (nextGrid grid)
+    pure1 s
+    --myGameLoop s (nextGrid grid)
 
 
 sdlLoop : (LinearIO io) => L io ()
@@ -94,7 +95,7 @@ sdlLoop = initSDL [SDLInitVideo] (\err => putStrLn "Fatal error: \{show err}") $
 
   grid <- liftIO $ initGrid {w=width, h=height}
 
-  s <- myGameLoop s $ grid
+  s <- myGameLoop s $ nextGrid grid
   s <- closeRenderer s
   s <- closeWindow s
   quitSDL s
