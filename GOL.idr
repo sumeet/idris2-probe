@@ -2,9 +2,20 @@ module GOL
 
 import Data.Fin
 import Data.Fin.Extra
-import Data.Vect
+import Data.Linear.Array
 import Data.List
+import Data.Vect
 import System.Random
+
+ConstantVect : Nat -> Type -> Type
+ConstantVect n t = IArray t
+
+fromVect : {n: Nat} -> {t: Type} -> Vect n t ->
+           ConstantVect n t
+fromVect v = ?elo2
+  where
+    intermediate : MArray LinArray
+    intermediate = newArray (cast n)
 
 export
 Point : {w: Nat} -> {h: Nat} -> Type
