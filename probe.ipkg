@@ -4,5 +4,6 @@ modules = Main
 
 main = Main
 executable = probe
+depends = contrib
 
 opts = "-p contrib -p sdl"
