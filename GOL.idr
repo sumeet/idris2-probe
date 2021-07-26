@@ -10,6 +10,9 @@ import System.Random
 ConstantVect : Nat -> Type -> Type
 ConstantVect n t = IArray t
 
+data HLPair : Type -> Type -> Type where
+  (#) : a -> (1 _ : b) -> HLPair a b
+
 fromLinRes : (1 _ : Res _ (const t)) -> t
 fromLinRes (_ # x) = x
 
@@ -25,9 +28,12 @@ export
 fromVect : {n: Nat} -> {t: Type} -> Vect n t ->
            ConstantVect n t
 fromVect vect = newArray (cast n) $ \mutArray =>
-  let arr = linFold (\arr, elem => fromLinRes $ (write arr 0 elem)) mutArray vect in
+  let firstAcc : HLPair Int (LinArray t) = 0 # mutArray
+      (max # arr) =
+        linFold (\(i # arr), elem => (i + 1) # (fromLinRes $ (write arr i elem)))
+                firstAcc
+                vect in
       toIArray arr $ id
-  --toIArray (snd $ write mutArray 0 $ head vect) $ id
 
 export
 Point : {w: Nat} -> {h: Nat} -> Type
