@@ -4,11 +4,21 @@ import Data.Fin
 import Data.Fin.Extra
 import Data.Linear.Array
 import Data.List
+import Data.Maybe
 import Data.Vect
 import System.Random
 
 ConstantVect : Nat -> Type -> Type
 ConstantVect n t = IArray t
+
+partial
+lolFromJust : Maybe t -> t
+lolFromJust (Just x) = x
+
+infixl 9 !!
+partial
+(!!) : Fin n -> ConstantVect n t -> t
+n !! arr = lolFromJust $ read arr (cast $ finToInteger n)
 
 data HLPair : Type -> Type -> Type where
   (#) : a -> (1 _ : b) -> HLPair a b
@@ -59,10 +69,10 @@ add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} ->
       (CoordDiff, CoordDiff) -> Maybe (Point {w = w, h = h})
 add (x,y) (dx,dy) = Just (!(applyDiff x dx), !(applyDiff y dy))
 
---countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
---countFin f [] = FZ
---countFin f (x :: xs) = let rest = countFin f xs in
---    if f x then shift 1 $ rest else weaken rest
+countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
+countFin f [] = FZ
+countFin f (x :: xs) = let rest = countFin f xs in
+    if f x then shift 1 $ rest else weaken rest
 
 NumNeighbors : Type
 NumNeighbors = Nat
