@@ -10,12 +10,24 @@ import System.Random
 ConstantVect : Nat -> Type -> Type
 ConstantVect n t = IArray t
 
+fromLinRes : (1 _ : Res _ (const t)) -> t
+fromLinRes (_ # x) = x
+
+linFold' : ((1 _ : acc) -> el -> acc) -> (1 _ : acc) -> List el -> acc
+linFold' fn acc [] = acc
+linFold' fn acc (x::xs) = linFold' fn (fn acc x) xs
+
+linFold : Foldable t => ((1 _ : acc) -> el -> acc) -> (1 _ : acc) -> t el ->
+          acc
+linFold fn acc foldable = linFold' fn acc $ toList foldable
+
+export
 fromVect : {n: Nat} -> {t: Type} -> Vect n t ->
            ConstantVect n t
-fromVect v = ?elo2
-  where
-    intermediate : MArray LinArray
-    intermediate = newArray (cast n)
+fromVect vect = newArray (cast n) $ \mutArray =>
+  let arr = linFold (\arr, elem => fromLinRes $ (write arr 0 elem)) mutArray vect in
+      toIArray arr $ id
+  --toIArray (snd $ write mutArray 0 $ head vect) $ id
 
 export
 Point : {w: Nat} -> {h: Nat} -> Type
