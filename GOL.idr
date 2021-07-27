@@ -8,17 +8,34 @@ import Data.Maybe
 import Data.Vect
 import System.Random
 
-ConstantVect : Nat -> Type -> Type
-ConstantVect n t = IArray t
+%builtin Natural Nat
+%builtin Natural Fin
+%builtin NaturalToInteger finToInteger
+%builtin NaturalToInteger natToInteger
 
 partial
 lolFromJust : Maybe t -> t
 lolFromJust (Just x) = x
 
+ConstantVect : Nat -> Type -> Type
+ConstantVect n t = IArray t
+
 infixl 9 !!
 partial
 (!!) : Fin n -> ConstantVect n t -> t
 n !! arr = lolFromJust $ read arr (cast $ finToInteger n)
+
+export
+zipWithIndex : {n: Nat} -> Vect n a -> Vect n (Fin n, a)
+zipWithIndex v = zip Data.Vect.Fin.range v
+
+partial
+zip : {n: Nat} -> Vect n t1 -> ConstantVect n t2 -> Vect n (t1, t2)
+zip v cv = map (\(i, vItem) => (vItem, (i !! cv))) $ zipWithIndex v
+
+partial
+withIndex : {n: Nat} -> ConstantVect n t -> Vect n (Fin n, t)
+withIndex cv = zip Data.Vect.Fin.range cv
 
 data HLPair : Type -> Type -> Type where
   (#) : a -> (1 _ : b) -> HLPair a b
@@ -44,6 +61,10 @@ fromVect vect = newArray (cast n) $ \mutArray =>
                 firstAcc
                 vect in
       toIArray arr $ id
+
+partial
+mapToVect : {n: Nat} -> (t1 -> t2) -> ConstantVect n t1 -> Vect n t2
+mapToVect f cv = map (\(n, item) => f (n !! cv)) $ withIndex cv
 
 export
 Point : {w: Nat} -> {h: Nat} -> Type
@@ -75,18 +96,15 @@ countFin f (x :: xs) = let rest = countFin f xs in
     if f x then shift 1 $ rest else weaken rest
 
 NumNeighbors : Type
-NumNeighbors = Nat
-
-export
-zipWithIndex : {n: Nat} -> Vect n a -> Vect n (Fin n, a)
-zipWithIndex v = zip Data.Vect.Fin.range v
+NumNeighbors = Fin 9
 
 export
 Grid : Nat -> Nat -> Type
-Grid w h = Vect w (Vect h Bool)
+Grid w h = ConstantVect w (ConstantVect h Bool)
 
+partial
 get : Grid w h -> Fin w -> Fin h -> Bool
-get grid x y = y `index` (x `index` grid)
+get grid x y = y !! (x !! grid)
 
 -- Any live cell with two or three live neighbours survives.
 -- Any dead cell with three live neighbours becomes a live cell.
@@ -97,44 +115,36 @@ applyConwayRules True 3 = True
 applyConwayRules False 3 = True
 applyConwayRules _ _ = False
 
+partial
 numOnNeighbors : {w: Nat} -> {h: Nat} -> Grid w h -> Point {w = w, h = h}
                  -> NumNeighbors
 numOnNeighbors grid xy = let neighbors = map (add xy) dxdys in
-    cast $ count (\case Nothing => False
-                        Just (x,y) => get grid x y) neighbors
+    cast $ countFin (\case Nothing => False
+                           Just (x,y) => get grid x y) neighbors
     where
         dxdys : Vect 8 (CoordDiff, CoordDiff)
         dxdys = [(Decr, Decr), (Decr, None), (Decr, Incr),
                  (None, Decr), (None, Incr),
                  (Incr, Decr), (Incr, None), (Incr, Incr)]
 
-conwayRules : Bool -> Nat -> Bool
-conwayRules b n = n == 3 || n == 4 && b
+export
+partial
+nextGrid : {w: Nat} -> {h: Nat} -> Grid w h -> Grid w h
+nextGrid grid =
+    let cols = mapToVect (withIndex {n = h}) grid
+        cells = zipWithIndex {n = w} cols in
+    fromVect $ map (\(x, cols) =>
+            fromVect $ map (\(y, cell) =>
+                    applyConwayRules cell $ numOnNeighbors grid (x,y))
+                cols)
+        cells
 
 export
-nextGrid : Grid w h -> Grid w h
-nextGrid grid = zipWith (zipWith conwayRules) grid numNeighbors
-  where boolToNat : Bool -> Nat
-        boolToNat True = 1
-        boolToNat False = 0
-        go : (a -> b) -> (b -> b -> b) -> (b -> b -> b -> b) -> b -> b -> Vect n a -> Vect (S n) b
-        go c p p2 a b [] = [p a b]
-        go c p p2 a b (x::xs) = let x' = c x in p2 a b x' :: go c p p2 b x' xs
-        f : (a -> b) -> (b -> b -> b) -> (b -> b -> b -> b) -> Vect n a -> Vect n b
-        f c _ _ [] = []
-        f c _ _ [x] = [c x]
-        f c p p2 (x::y::xs) = let x' = c x ; y' = c y in p x' y' :: go c p p2 x' y' xs
-        add3 : Nat -> Nat -> Nat -> Nat
-        add3 a b c = a + b + c
-        numNeighbors : Vect w (Vect h NumNeighbors)
-        numNeighbors = f (f boolToNat (+) add3) (zipWith (+)) (zipWith3 add3) grid
-
-
-export
+partial
 flatGrid : {w: Nat} -> {h: Nat} -> Grid w h ->
            Vect (w * h) (Point {w=w, h=h}, Bool)
 flatGrid grid =
-    let cols = map (zipWithIndex {n = h}) grid
+    let cols = mapToVect (withIndex {n = h}) grid
         cells = zipWithIndex {n = w} cols
         gridWithIndex =
             map (\(x, cols) =>
@@ -142,9 +152,13 @@ flatGrid grid =
                 cells in
     concat gridWithIndex
 
+initGrid' : {w: Nat} -> {h: Nat} -> IO (Vect w (Vect h Bool))
+initGrid' = do
+    sequence $ Data.Vect.replicate w $ sequence $
+      Data.Vect.replicate h (rndSelect [True, False])
 
 export
 initGrid : {w: Nat} -> {h: Nat} -> IO (Grid w h)
 initGrid = do
-    sequence $ Data.Vect.replicate w $
-        sequence $ Data.Vect.replicate h (rndSelect [True, False])
+  grid <- initGrid' {w=w, h=h}
+  pure $ fromVect $ map fromVect grid

@@ -67,6 +67,7 @@ drawPoints s ((point, onOrOff) :: xs) =
                           pure1 s
   drawPoints s xs
 
+partial
 myGameLoop : LinearIO io => {w: Nat} -> {h: Nat} ->
              (1 _ : SDL WithRenderer) -> Grid w h ->
              L {use = 1} io (SDL WithRenderer)
@@ -86,7 +87,7 @@ myGameLoop s grid = do
     pure1 s
     --myGameLoop s (nextGrid grid)
 
-
+partial
 sdlLoop : (LinearIO io) => L io ()
 sdlLoop = initSDL [SDLInitVideo] (\err => putStrLn "Fatal error: \{show err}") $ \s => do
   Success s <- newWindow windowOpts s
@@ -102,6 +103,7 @@ sdlLoop = initSDL [SDLInitVideo] (\err => putStrLn "Fatal error: \{show err}") $
   s <- closeWindow s
   quitSDL s
 
+partial
 main : IO ()
 main = do
     run sdlLoop
