@@ -11,7 +11,7 @@ import System.Random
 %builtin Natural Nat
 %builtin Natural Fin
 %builtin NaturalToInteger finToInteger
-%builtin NaturalToInteger natToInteger
+-- %builtin IntegerToNatural integerToFin
 
 partial
 lolFromJust : Maybe t -> t
@@ -78,25 +78,20 @@ export
 gety : {h: Nat} -> Point {w=_, h=h} -> Fin h
 gety = snd
 
-data CoordDiff = Decr | None | Incr
-
-applyDiff : {n: Nat} -> Fin n -> CoordDiff -> Maybe (Fin n)
-applyDiff x None = Just x
-applyDiff FZ Decr = Nothing
-applyDiff (FS k) Decr = Just $ weaken k
-applyDiff k Incr = strengthen $ shift 1 k
-
 add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} ->
-      (CoordDiff, CoordDiff) -> Maybe (Point {w = w, h = h})
-add (x,y) (dx,dy) = Just (!(applyDiff x dx), !(applyDiff y dy))
+      (Integer, Integer) -> Maybe (Point {w = w, h = h})
+add (x,y) (dx,dy) = do
+    x' <- integerToFin ((finToInteger x) + dx) w
+    y' <- integerToFin ((finToInteger y) + dy) h
+    Just (x', y')
 
-countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
-countFin f [] = FZ
-countFin f (x :: xs) = let rest = countFin f xs in
-    if f x then shift 1 $ rest else weaken rest
+--countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
+--countFin f [] = FZ
+--countFin f (x :: xs) = let rest = countFin f xs in
+--    if f x then shift 1 $ rest else weaken rest
 
 NumNeighbors : Type
-NumNeighbors = Fin 9
+NumNeighbors = Nat
 
 export
 Grid : Nat -> Nat -> Type
@@ -119,13 +114,13 @@ partial
 numOnNeighbors : {w: Nat} -> {h: Nat} -> Grid w h -> Point {w = w, h = h}
                  -> NumNeighbors
 numOnNeighbors grid xy = let neighbors = map (add xy) dxdys in
-    cast $ countFin (\case Nothing => False
-                           Just (x,y) => get grid x y) neighbors
+    cast $ count (\case Nothing => False
+                        Just (x,y) => get grid x y) neighbors
     where
-        dxdys : Vect 8 (CoordDiff, CoordDiff)
-        dxdys = [(Decr, Decr), (Decr, None), (Decr, Incr),
-                 (None, Decr), (None, Incr),
-                 (Incr, Decr), (Incr, None), (Incr, Incr)]
+        dxdys : Vect 8 (Integer, Integer)
+        dxdys = [(-1, -1), (-1, 0), (-1, 1),
+                 (0, -1), (0, 1),
+                 (1, -1), (1, 0), (1, 1)]
 
 export
 partial
