@@ -8,14 +8,9 @@ import Data.Maybe
 import Data.Vect
 import System.Random
 
--- %builtin Natural Nat
+%builtin Natural Nat
 %builtin Natural Fin
-
-fti : Fin n -> Integer
-fti FZ     = 0
-fti (FS k) = 1 + fti k
--- %builtin NaturalToInteger fti
--- %builtin IntegerToNatural integerToFin
+%builtin NaturalToInteger finToInteger
 
 partial
 lolFromJust : Maybe t -> t
@@ -27,7 +22,7 @@ ConstantVect n t = IArray t
 infixl 9 !!
 partial
 (!!) : Fin n -> ConstantVect n t -> t
-n !! arr = lolFromJust $ read arr (cast $ fti n)
+n !! arr = lolFromJust $ read arr (cast $ finToInteger n)
 
 export
 zipWithIndex : {n: Nat} -> Vect n a -> Vect n (Fin n, a)
@@ -85,8 +80,8 @@ gety = snd
 add : {w: Nat} -> {h: Nat} -> Point {w = w, h = h} ->
       (Integer, Integer) -> Maybe (Point {w = w, h = h})
 add (x,y) (dx,dy) = do
-    x' <- integerToFin ((fti x) + dx) w
-    y' <- integerToFin ((fti y) + dy) h
+    x' <- integerToFin ((finToInteger x) + dx) w
+    y' <- integerToFin ((finToInteger y) + dy) h
     Just (x', y')
 
 --countFin : (x -> Bool) -> Vect n x -> Fin (n + 1)
